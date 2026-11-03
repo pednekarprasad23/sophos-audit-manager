@@ -2,6 +2,7 @@ version: '3.8'
 
 services:
   web:
+    image: pednekarprasad23/sophos-audit-manager:latest
     build:
       context: .
       dockerfile: Dockerfile
