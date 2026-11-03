@@ -266,63 +266,8 @@
             <button type="submit" class="btn">🔒 Access Admin Panel</button>
         </form>
 
-        <div class="credentials">
-            <p><strong>🔑 Default credentials (for setup):</strong></p>
-            <p>Username: <code>admin</code></p>
-            <p>Password: <code>admin</code></p>
-        </div>
     </div>
 
-    <script>
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const errorDiv = document.getElementById('error');
-
-            // Clear previous errors
-            errorDiv.style.display = 'none';
-
-            try {
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ username, password })
-                });
-
-                const data = await response.json();
-
-                if (response.ok && data.success) {
-                    // Store user info and redirect
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    window.location.href = '/dashboard';
-                } else {
-                    errorDiv.textContent = data.error || 'Invalid credentials. Please try again.';
-                    errorDiv.style.display = 'block';
-                    document.getElementById('password').value = '';
-                }
-            } catch (err) {
-                errorDiv.textContent = 'Network error. Please check your connection.';
-                errorDiv.style.display = 'block';
-            }
-        });
-
-        // Add animation to login button
-        const btn = document.querySelector('.btn');
-        btn.addEventListener('mousemove', function(e) {
-            const rect = this.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            this.style.background = `linear-gradient(90deg, hsl(${x * 0.36}, 100%, 50%), hsl(${y * 0.36}, 100%, 50%))`;
-        });
-        btn.addEventListener('mouseleave', function() {
-            this.style.background = 'linear-gradient(90deg, #00d4ff 0%, #00ff88 100%)';
-        });
-    </script>
+    <script src="/js/login.js" defer></script>
 </body>
 </html>
