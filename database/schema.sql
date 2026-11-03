@@ -75,8 +75,8 @@ CREATE TABLE IF NOT EXISTS password_entries (
 
 -- Default admin user with bcrypt hashed password 'admin'
 INSERT INTO users (username, password_hash, role) VALUES
-('admin', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin');
+('admin', '$2b$10$/og7j/HkzJIEBKcBEiIi1evxqa9zVbAyKjMaO8x1dQlOVRZiwkcZK', 'admin');
 
 -- Default auditor user
 INSERT INTO users (username, password_hash, role) VALUES
-('auditor', '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'auditor');
+('auditor', '$2b$10$/og7j/HkzJIEBKcBEiIi1evxqa9zVbAyKjMaO8x1dQlOVRZiwkcZK', 'auditor');
