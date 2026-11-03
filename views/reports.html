@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sophos Audit Manager - Reports</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        .header {
+            background: #0f172a;
+            border-bottom: 1px solid #475569;
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo svg { width: 48px; height: 48px; }
+        .logo h1 { font-size: 20px; font-weight: 600; }
+        .nav-links { display: flex; gap: 24px; align-items: center; }
+        .nav-links a { color: #94a3b8; text-decoration: none; font-size: 14px; padding: 8px 12px; border-radius: 6px; transition: background-color 0.2s; }
+        .nav-links a:hover { background: #1e293b; color: #e2e8f0; }
+        .nav-links a.active { background: linear-gradient(90deg, #0d9488 0%, #0f766e 100%); color: white; }
+        .user-info span { color: #94a3b8; font-size: 14px; }
+        .logout-btn { background: #1e293b; border: 1px solid #475569; padding: 8px 16px; border-radius: 6px; color: #94a3b8; cursor: pointer; font-size: 14px; }
+        .logout-btn:hover { background: #334155; }
+        .main-content { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .page-header h2 { font-size: 24px; font-weight: 600; }
+        .add-btn { background: linear-gradient(90deg, #0d9488 0%, #0f766e 100%); border: none; padding: 12px 20px; border-radius: 8px; color: white; cursor: pointer; font-size: 14px; }
+        .add-btn:hover { opacity: 0.9; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #475569; }
+        th { background: #0f172a; color: #38bdf8; font-weight: 600; font-size: 14px; text-transform: uppercase; }
+        tr:hover { background: rgba(255, 255, 255, 0.03); }
+        .type-html { background: #3b82f6; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+        .type-pdf { background: #f59e0b; color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+        .status-completed { background: #16a34a; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; }
+        .no-data { text-align: center; padding: 40px; color: #64748b; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <svg viewBox="0 0 64 64">
+                    <rect width="64" height="64" rx="14" fill="#0d9488"/>
+                    <text x="32" y="32" dy="0.35em" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="26" font-weight="600" fill="#ffffff">SA</text>
+                </svg>
+                <h1>Sophos Audit Manager</h1>
+            </div>
+            <nav class="nav-links">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/sites">Sites</a>
+                <a href="/firewalls">Firewalls</a>
+                <a href="/reports" class="active">Reports</a>
+                <a href="/passwords">Password Manager</a>
+            </nav>
+            <div class="user-info">
+                <span id="username">admin</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h2>Audit Reports</h2>
+            <button class="add-btn" onclick="generateReport()">Generate Report</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Site</th>
+                    <th>Firewall</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="reportTableBody">
+                <tr><td colspan="7" class="no-data">Loading...</td></tr>
+            </tbody>
+        </table>
+    </main>
+
+    <script>
+        checkAuth();
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/me');
+                if (!response.ok) window.location.href = '/login';
+                else document.getElementById('username').textContent = (await response.json()).username;
+            } catch (err) { window.location.href = '/login'; }
+        }
+
+        function logout() {
+            fetch('/api/auth/logout', { method: 'POST' }).then(() => window.location.href = '/login');
+        }
+
+        async function loadReports() {
+            try {
+                const sites = await (await fetch('/api/sites')).json();
+                let html = '';
+                for (const site of sites) {
+                    const firewalls = await (await fetch('/api/firewalls/site/' + site.id)).json();
+                    for (const fw of firewalls) {
+                        const reports = await (await fetch('/api/reports/firewall/' + fw.id)).json();
+                        reports.forEach(r => {
+                            const typeBadge = r.report_type === 'pdf'
+                                ? '<span class="type-pdf">PDF</span>'
+                                : '<span class="type-html">HTML</span>';
+                            html += '<tr>' +
+                                '<td>' + (r.report_name || 'Report #' + r.id) + '</td>' +
+                                '<td>' + site.name + '</td>' +
+                                '<td>' + fw.name + '</td>' +
+                                '<td>' + typeBadge + '</td>' +
+                                '<td><span class="status-completed">' + r.status + '</span></td>' +
+                                '<td>' + new Date(r.created_at).toLocaleString() + '</td>' +
+                                '<td><a href="/api/reports/download/' + r.id + '" target="_blank" style="color:#0d9488;cursor:pointer">📥</a></td>' +
+                                '</tr>';
+                        });
+                    }
+                }
+                document.getElementById('reportTableBody').innerHTML = html || '<tr><td colspan="7" class="no-data">No reports found</td></tr>';
+            } catch (err) {
+                document.getElementById('reportTableBody').innerHTML = '<tr><td colspan="7" class="no-data">Error loading reports</td></tr>';
+            }
+        }
+
+        async function generateReport() {
+            const siteId = prompt('Enter site ID:');
+            const firewallId = prompt('Enter firewall ID:');
+            const reportName = prompt('Enter report name (optional):') || 'Report';
+            const type = confirm('Generate PDF? (OK = PDF, Cancel = HTML)') ? 'pdf' : 'html';
+
+            if (siteId && firewallId) {
+                const endpoint = type === 'pdf'
+                    ? '/api/reports/generate/pdf'
+                    : '/api/reports/generate/html';
+                await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ firewall_id: parseInt(firewallId), report_name: reportName })
+                });
+                loadReports();
+            }
+        }
+
+        loadReports();
+    </script>
+</body>
+</html>

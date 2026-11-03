@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sophos Audit Manager - Firewalls</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        .header {
+            background: #0f172a;
+            border-bottom: 1px solid #475569;
+            padding: 16px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo svg { width: 48px; height: 48px; }
+        .logo h1 { font-size: 20px; font-weight: 600; }
+        .nav-links { display: flex; gap: 24px; align-items: center; }
+        .nav-links a {
+            color: #94a3b8; text-decoration: none; font-size: 14px;
+            padding: 8px 12px; border-radius: 6px; transition: background-color 0.2s;
+        }
+        .nav-links a:hover { background: #1e293b; color: #e2e8f0; }
+        .nav-links a.active { background: linear-gradient(90deg, #0d9488 0%, #0f766e 100%); color: white; }
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .user-info span { color: #94a3b8; font-size: 14px; }
+        .logout-btn {
+            background: #1e293b; border: 1px solid #475569; padding: 8px 16px;
+            border-radius: 6px; color: #94a3b8; cursor: pointer; font-size: 14px;
+        }
+        .logout-btn:hover { background: #334155; }
+        .main-content { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .page-header h2 { font-size: 24px; font-weight: 600; }
+        .add-btn {
+            background: linear-gradient(90deg, #0d9488 0%, #0f766e 100%);
+            border: none; padding: 12px 20px; border-radius: 8px; color: white;
+            cursor: pointer; font-size: 14px; font-weight: 500;
+        }
+        .add-btn:hover { opacity: 0.9; }
+        .firewall-table {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-collapse: collapse;
+            overflow: hidden;
+        }
+        .firewall-table th, .firewall-table td {
+            padding: 16px;
+            text-align: left;
+            border-bottom: 1px solid #475569;
+        }
+        .firewall-table th {
+            background: #0f172a;
+            color: #38bdf8;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+        .firewall-table tr:last-child td { border-bottom: none; }
+        .firewall-table tr:hover { background: rgba(255, 255, 255, 0.03); }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-active { background: #16a34a; color: white; }
+        .status-inactive { background: #dc2626; color: white; }
+        .status-maintenance { background: #f59e0b; color: white; }
+        .firewall-table tr { background: transparent; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <svg viewBox="0 0 64 64">
+                    <rect width="64" height="64" rx="14" fill="#0d9488"/>
+                    <text x="32" y="32" dy="0.35em" text-anchor="middle" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" font-size="26" font-weight="600" fill="#ffffff">SA</text>
+                </svg>
+                <h1>Sophos Audit Manager</h1>
+            </div>
+            <nav class="nav-links">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/sites">Sites</a>
+                <a href="/firewalls" class="active">Firewalls</a>
+                <a href="/reports">Reports</a>
+                <a href="/passwords">Password Manager</a>
+            </nav>
+            <div class="user-info">
+                <span id="username">admin</span>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h2>Firewalls</h2>
+            <button class="add-btn" onclick="createFirewall()">Add Firewall</button>
+        </div>
+
+        <table class="firewall-table">
+            <thead>
+                <tr>
+                    <th>Name</th><th>Site</th><th>Serial #</th><th>Status</th><th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="firewallTableBody">
+                <tr><td colspan="5" style="text-align:center;padding:40px;color:#64748b;">Loading...</td></tr>
+            </tbody>
+        </table>
+    </main>
+
+    <script>
+        checkAuth();
+
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/auth/me');
+                if (!response.ok) window.location.href = '/login';
+                else document.getElementById('username').textContent = (await response.json()).username;
+            } catch (err) { window.location.href = '/login'; }
+        }
+
+        function logout() {
+            fetch('/api/auth/logout', { method: 'POST' }).then(() => window.location.href = '/login');
+        }
+
+        async function loadSites() {
+            const response = await fetch('/api/sites');
+            return await response.json();
+        }
+
+        async function loadFirewalls() {
+            try {
+                const sites = await loadSites();
+                let html = '';
+                for (const site of sites) {
+                    const res = await fetch(`/api/firewalls/site/${site.id}`);
+                    const firewalls = await res.json();
+                    firewalls.forEach(fw => {
+                        html += `<tr>
+                            <td><a href="/reports?site=${site.id}&fw=${fw.id}" style="color:inherit;text-decoration:none;">${fw.name}</a></td>
+                            <td>${site.name}</td>
+                            <td>${fw.serial_number || '-'}</td>
+                            <td><span class="status-badge status-${fw.status || 'active'}">${fw.status || 'active'}</span></td>
+                            <td><button onclick="deleteFirewall(${fw.id})" style="background:none;border:none;color:#0d9488;cursor:pointer">🗑️</button></td>
+                        </tr>`;
+                    });
+                }
+                document.getElementById('firewallTableBody').innerHTML = html || '<tr><td colspan="5" style="text-align:center;padding:40px;color:#64748b;">No firewalls configured</td></tr>';
+            } catch (err) {
+                document.getElementById('firewallTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#64748b;">Error loading data</td></tr>';
+            }
+        }
+
+        async function createFirewall() {
+            const sites = await loadSites();
+            const siteSelect = sites.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+            const name = prompt('Enter firewall name:');
+            const siteId = prompt('Enter site ID:');
+            if (name && siteId) {
+                await fetch('/api/firewalls', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ site_id: parseInt(siteId), name, serial_number: '', model: '', firmware_version: '', api_key: '', status: 'active' })
+                });
+                loadFirewalls();
+            }
+        }
+
+        async function deleteFirewall(id) {
+            if (confirm('Delete this firewall?')) {
+                await fetch(`/api/firewalls/${id}`, { method: 'DELETE' });
+                loadFirewalls();
+            }
+        }
+
+        loadFirewalls();
+    </script>
+</body>
+</html>

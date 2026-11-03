@@ -1,0 +1,26 @@
+{
+  "name": "sophos-audit-manager",
+  "version": "1.0.0",
+  "description": "Sophos XG Firewall Audit Manager",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "docker-build": "docker build -t sophos-audit-manager .",
+    "docker-compose-up": "docker-compose up -d",
+    "docker-compose-down": "docker-compose down",
+    "init-db": "node init-db.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "express-fileupload": "^1.4.1",
+    "html-pdf": "^3.0.1",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.6.0",
+    "pdfkit": "^0.15.0"
+  },
+  "author": "Claude Code",
+  "license": "MIT"
+}

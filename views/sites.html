@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magnamious Systems - Site Management</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        .cyber-grid {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(0, 212, 255, 0.03) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(0, 212, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px; z-index: 0;
+        }
+        .header { background: rgba(10, 10, 26, 0.95); border-bottom: 1px solid rgba(0, 212, 255, 0.2); padding: 16px 24px; position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); }
+        .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .logo { display: flex; align-items: center; gap: 12px; }
+        .logo svg { width: 40px; height: 40px; }
+        .logo h1 { font-size: 20px; font-weight: 700; background: linear-gradient(to right, #00d4ff, #00ff88); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .logo .company { font-size: 12px; color: #64748b; font-weight: 300; }
+        .nav-links { display: flex; gap: 16px; align-items: center; }
+        .nav-links a { color: #94a3b8; text-decoration: none; font-size: 14px; padding: 8px 16px; border-radius: 6px; transition: all 0.3s; position: relative; }
+        .nav-links a:hover { background: rgba(0, 212, 255, 0.1); color: #e2e8f0; }
+        .nav-links a.active { background: linear-gradient(90deg, #00d4ff, #00ff88); color: #0a0a0a; font-weight: 600; }
+        .user-info span { color: #94a3b8; font-size: 14px; }
+        .logout-btn { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 16px; border-radius: 6px; color: #ef4444; cursor: pointer; }
+        .logout-btn:hover { background: rgba(239, 68, 68, 0.3); }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .page-header h2 { font-size: 24px; font-weight: 600; }
+        .add-btn { background: linear-gradient(90deg, #00d4ff 0%, #00ff88 100%); border: none; padding: 12px 20px; border-radius: 8px; color: #0a0a0a; cursor: pointer; font-size: 14px; font-weight: 600; }
+        .main-content { max-width: 1200px; margin: 0 auto; padding: 24px; position: relative; z-index: 1; }
+        .site-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .site-card { background: rgba(10, 10, 26, 0.5); border-radius: 12px; padding: 20px; border: 1px solid rgba(0, 212, 255, 0.2); transition: transform 0.3s; }
+        .site-card:hover { transform: translateY(-5px); box-shadow: 0 8px 30px rgba(0, 212, 255, 0.1); }
+        .site-card h3 { font-size: 18px; font-weight: 600; margin-bottom: 8px; color: #e2e8f0; }
+        .site-info { font-size: 14px; color: #94a3b8; margin-bottom: 16px; }
+        .no-sites { text-align: center; padding: 60px; color: #64748b; }
+    </style>
+</head>
+<body>
+    <div class="cyber-grid"></div>
+    <header class="header">
+        <div class="header-content">
+            <div class="logo"><svg viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#00d4ff"/><text x="32" y="32" dy="0.35em" text-anchor="middle" font-size="26" font-weight="600" fill="#ffffff">SA</text></svg><h1>Sophos Audit</h1><div class="company">Magnamious Systems</div></div>
+            <nav class="nav-links">
+                <a href="/dashboard">Dashboard</a>
+                <a href="/sites" class="active">Sites</a>
+                <a href="/firewalls">Firewalls</a>
+                <a href="/reports">Reports</a>
+                <a href="/passwords">Password Manager</a>
+            </nav>
+            <div class="user-info"><span id="username">Admin</span><button class="logout-btn" onclick="logout()">Logout</button></div>
+        </div>
+    </header>
+    <main class="main-content">
+        <div class="page-header"><h2>🏢 Sites / Projects</h2><button class="add-btn" onclick="addSite()">➕ Add Site</button></div>
+        <div class="site-grid" id="siteGrid"><div class="no-sites">Loading...</div></div>
+    </main>
+    <script>
+        checkAuth(); async function checkAuth() { try { const r = await fetch('/api/auth/me'); if (!r.ok) window.location.href='/login'; else { document.getElementById('username').textContent=(await r.json()).username; loadSites(); } } catch(e){window.location.href='/login';} }
+        function logout() { fetch('/api/auth/logout',{method:'POST'}).then(()=>window.location.href='/login'); }
+        async function loadSites() {
+            try {
+                const sites = await (await fetch('/api/sites')).json();
+                let html = '';
+                sites.forEach(s => { html += `<div class="site-card"><h3><a href="/firewalls?site=${s.id}" style="color:inherit;text-decoration:none;">${s.name}</a></h3><div class="site-info">📍 ${s.location||'No location'}<div style="font-size:12px;color:#64748b;margin-top:4px;">${s.description||'No description'}</div></div></div>`; });
+                document.getElementById('siteGrid').innerHTML = html || '<div class="no-sites">🔒 No sites found. Click "Add Site" to create one.</div>';
+            } catch(e) { document.getElementById('siteGrid').innerHTML = '<div class="no-sites">Error loading sites</div>'; }
+        }
+        async function addSite() {
+            const name = prompt('Enter site name:');
+            if (name) {
+                await fetch('/api/sites', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name, description:'', location:''})});
+                loadSites();
+            }
+        }
+        loadSites();
+    </script>
+</body>
+</html>

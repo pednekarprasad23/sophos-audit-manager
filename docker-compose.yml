@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sophos-audit-manager
+    ports:
+      - "9005:80"
+    volumes:
+      - ./data:/app/data
+      - ./reports:/app/reports
+      - ./templates:/app/templates
+    environment:
+      - NODE_ENV=development
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  db:
+    image: mariadb:10.11
+    container_name: sophos-audit-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-audit_root_password_2024}
+      MYSQL_DATABASE: sophos_audit
+      MYSQL_USER: audit_user
+      MYSQL_PASSWORD: ${DB_PASSWORD:-audit_user_pass_2024}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+    restart: unless-stopped
+
+volumes:
+  db_data:
